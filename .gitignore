@@ -1,6 +1,13 @@
 .gradle
 .settings
 .project
+*tmp
+**/build/
+!src/**/build/
+
+gradle-app.setting
+
+!gradle-wrapper.jar
 
 # Compiled class file
 *.class
