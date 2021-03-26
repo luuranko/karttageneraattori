@@ -1,2 +1,6 @@
-karttageneraattori/AppTest.java
- karttageneraattori.AppTest
+karttageneraattori/TileTest.java
+ karttageneraattori.TileTest
+karttageneraattori/MapTest.java
+ karttageneraattori.MapTest
+karttageneraattori/GeneratorTest.java
+ karttageneraattori.GeneratorTest

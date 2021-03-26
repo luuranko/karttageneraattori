@@ -1,7 +1,9 @@
 .gradle
 .settings
 .project
-*tmp
+.vscode
+*.tmp
+**tmp
 **/build/
 !src/**/build/
 
