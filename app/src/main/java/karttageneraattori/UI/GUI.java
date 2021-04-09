@@ -17,7 +17,8 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import karttageneraattori.Logic.Map;
 import karttageneraattori.Logic.Generator;
-import karttageneraattori.Logic.TileType;
+import karttageneraattori.Logic.Tile;
+import karttageneraattori.Logic.Type;
 import javafx.scene.Group;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
@@ -29,8 +30,9 @@ import javafx.scene.shape.StrokeType;
 public class GUI extends Application {
 
     private static int tileSize = 5;
-    private static int startingDimension = 50;
+    private static int startingDimension = 100;
     private static int pad = 10;
+    private Generator gen;
 
     private StackPane mapField(int width, int height) {
         StackPane pane = new StackPane();
@@ -43,17 +45,20 @@ public class GUI extends Application {
         pane.setAlignment(base, Pos.TOP_LEFT);
         pane.setAlignment(mapField, Pos.TOP_LEFT);
 
+        gen.newValues();
+        gen.newMap(width, height);
+        
+        gen.initMap();
 
-        Map map = new Map(width, height);
-        Generator gen = new Generator(2, new Random());
-        gen.initMap(map);
-        TileType inspected;
+        Map map = gen.getMap();
+
+        Tile inspected;
         
         int row = 0;
         int col = 0;
         for (double y = 0; row < height; y += tileSize * Math.sqrt(3)) {
             for (double x = 0, dy = y; col < width; x += 1.5 * tileSize) {
-                inspected = map.getMap()[col][row].getType();
+                inspected = map.getMap()[col][row];
                 col++;
                 Polygon tile = new Polygon();
                 tile.getPoints().addAll(new Double[]{
@@ -64,10 +69,12 @@ public class GUI extends Application {
                     x, dy + tileSize * Math.sqrt(3),
                     x - (tileSize * 0.5), dy + tileSize * Math.sqrt(3) * 0.5
                 });
-                if (inspected == TileType.SEA) {
+                if (inspected.getType() == Type.SEA) {
                     tile.setFill(Color.DARKBLUE);
-                } else if (inspected == TileType.SAND) {
+                } else if (inspected.getType() == Type.LAND) {
                     tile.setFill(Color.MOCCASIN);
+                } else if (inspected.getType() == Type.LAKE) {
+                    tile.setFill(Color.LIGHTBLUE);
                 } else {
                     // Something has gone wrong
                     tile.setFill(Color.RED);
@@ -94,7 +101,8 @@ public class GUI extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        
+        gen = new Generator(new Random());
+
         HBox root = new HBox();
         root.setPadding(new Insets(0, pad * 2, pad * 2, 0));
         VBox controls = new VBox();
@@ -102,9 +110,9 @@ public class GUI extends Application {
         controls.setSpacing(pad);
 
         Label widthLabel = new Label("Width");
-        TextField insertWidth = new TextField();
+        TextField insertWidth = new TextField(startingDimension + "");
         Label heightLabel = new Label("Height");
-        TextField insertHeight = new TextField();
+        TextField insertHeight = new TextField(startingDimension + "");
         Button confirmBtn = new Button("Generate");
         Label errorMsg = new Label();
 
@@ -149,6 +157,8 @@ public class GUI extends Application {
                 if (ok && (x > 250  || y > 250)) {
                     errorMsg.setText("Values are too high");
                     ok = false;
+                } else if (ok && (x < 10 || y < 10)) {
+                    errorMsg.setText("Values are too small");
                 }
                 if (ok) {
                     errorMsg.setText("");

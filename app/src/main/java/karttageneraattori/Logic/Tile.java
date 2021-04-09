@@ -1,22 +1,34 @@
 package karttageneraattori.Logic;
-
+/**
+ * Tiles contain a Type enum and coordinates x and y.
+ * <p>
+ */
 public class Tile {
-    private TileType type;
+    private Type type;
+    private int x;
+    private int y;
 
-    public Tile() {
-        this.type = TileType.EMPTY;
+    public Tile(int x, int y) {
+        this.x = x;
+        this.y = y;
+        this.type = Type.EMPTY;
     }
 
-    public Tile(TileType type) {
-        this.type = type;
-    }
-
-    public TileType getType() {
+    public Type getType() {
         return type;
     }
-
-    public void setType(TileType type) {
+    
+    public void setType(Type type) {
         this.type = type;
     }
 
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    
 }
