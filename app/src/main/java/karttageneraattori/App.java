@@ -1,5 +1,4 @@
 package karttageneraattori;
-
 import karttageneraattori.UI.GUI;
 
 public class App {

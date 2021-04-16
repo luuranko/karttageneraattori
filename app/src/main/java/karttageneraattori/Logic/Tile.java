@@ -3,7 +3,7 @@ package karttageneraattori.Logic;
  * Tiles contain a Type enum and coordinates x and y.
  * <p>
  */
-public class Tile {
+public class Tile implements Comparable<Tile> {
     private Type type;
     private int x;
     private int y;
@@ -28,6 +28,16 @@ public class Tile {
 
     public int getY() {
         return y;
+    }
+
+    @Override
+    public int compareTo(Tile other) {
+        if (other.getX() > this.getX()) {
+            return -1;
+        } else if (other.getY() > this.getY()) {
+            return -1;
+        }
+        return 1;
     }
 
     

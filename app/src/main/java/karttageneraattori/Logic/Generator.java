@@ -11,12 +11,14 @@ public class Generator {
     private double landToSeaRatio;
     private Random rng;
     private Map m;
+    private int amt; // Used when determining areas
 
     public Generator(int islandNum, double landToSeaRatio, Random random) {
         this.m = new Map(100, 100);
         this.islandNum = islandNum;
         this.landToSeaRatio = landToSeaRatio;
         this.rng = random;
+        amt = 0;
     }
 
     public Generator(Random random) {
@@ -24,6 +26,7 @@ public class Generator {
         this.rng = random;
         setIslandNum(2);
         setLandToSeaRatio(0.3);
+        amt = 0;
     }
 
     public void newMap(int x, int y) {
@@ -36,7 +39,7 @@ public class Generator {
 
     public void newValues() {
         setIslandNum(rng.nextInt(3) + 1);
-        setLandToSeaRatio(((double) rng.nextInt(7) / 20.0) + 0.2);
+        setLandToSeaRatio(((double) rng.nextInt(4) / 20.0) + 0.2);
     }
 
     public void setIslandNum(int islandNum) {
@@ -51,52 +54,53 @@ public class Generator {
      * The Generator's current Map is initialized.
      * The map's borders are made into SEA-tiles.
      * LAND-tiles are placed based on 1-3 random starting points.
-     * The map's borders are cleaned so that the islands
-     *  do not press into the map's borders too much.
-     * Any single tiles are removed
+     *  Any single tiles are removed
      *  and made to conform to the surrounding tiles.
-     * Lastly, remaining EMPTY-tiles are turned into SEA-tiles.
+     * Remaining EMPTY-tiles are turned into SEA-tiles.
+     *  Any SEA-areas are turned into LAKE-areas, if landlocked.
      * <p>
      * @return      void
      */
     public void initMap() {
-        // System.out.println("Islands: " + islandNum);
-        // System.out.println("Land to Sea ratio: " + landToSeaRatio);
         long start = System.currentTimeMillis();
-        seaBorders();
-        // System.out.println("Sea borders done");
+        long alg = start;
+        double time;
+
         createIslands();
-        // System.out.println("Islands created");
-        cleanLandBorders();
-        // System.out.println("Borders cleaned");
-        removeSingles();
-        // System.out.println("Removed lonely tiles");
+        time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        System.out.println("Islands created in " + time);
+        alg = System.currentTimeMillis();
+
+        removeSingles(5);
+        time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        System.out.println("Removed lonely tiles (5) in " + time);
+        alg = System.currentTimeMillis();
+
+        removeSingles(2);
+        time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        System.out.println("Removed lonely tiles (2) in " + time);
+        alg = System.currentTimeMillis();
+
         fillInSea();
-        // System.out.println("Sea filled in");
-        // fillInLakes(map);
-        // System.out.println("Lakes filled in");
-        long end = System.currentTimeMillis();
-        double time = (double) (end - start) * 0.01;
-        System.out.println("Generating the map took " + time + " seconds");
+        time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        System.out.println("Filled in sea in " + time);
+        alg = System.currentTimeMillis();
+
+        processEntities();
+        time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        System.out.println("Filled in lakes in " + time);
+        alg = System.currentTimeMillis();
+
+        time = (double) (System.currentTimeMillis() - start) * 0.001;
+        System.out.println("Generating the map took "
+            + time + " seconds altogether");
     }
 
-    // Makes the borders type SEA
-    public void seaBorders() {
-        for (int x = 0; x < m.getWidth(); x++) {
-            m.getMap()[x][0].setType(Type.SEA);
-            m.getMap()[x][m.getHeight() - 1].setType(Type.SEA);
-            
-        }
-        for (int y = 1; y < m.getHeight() - 1; y++) {
-            m.getMap()[0][y].setType(Type.SEA);
-            m.getMap()[m.getWidth() - 1][y].setType(Type.SEA);
-        }
-    }
 
     // Makes all type EMPTY tiles type SEA
     public void fillInSea() {
-        for (int y = 1; y < m.getHeight() - 1; y++) {
-            for (int x = 1; x < m.getWidth() - 1; x++) {
+        for (int y = 0; y < m.getHeight(); y++) {
+            for (int x = 0; x < m.getWidth(); x++) {
                 if (m.getMap()[x][y].getType() == Type.EMPTY) {
                     m.getMap()[x][y].setType(Type.SEA);
                 }
@@ -110,7 +114,6 @@ public class Generator {
         int landTilesGoal = (int) (totalTiles * landToSeaRatio);
 
         // Coordinates for islands' starting points
-        // TODO Use these arrays to check if the islands connect to each other
         int[][] islands_x = new int[islandNum][landTilesGoal + 1];
         int[][] islands_y = new int[islandNum][landTilesGoal + 1];
 
@@ -119,7 +122,8 @@ public class Generator {
         minDistance_x = minDistance_x > 1 ? minDistance_x : 2;
         minDistance_y = minDistance_y > 1 ? minDistance_y : 2;
 
-        // Checking that the islands' starting points are not too close together
+        // Checking that the islands' starting points
+        // are not too close together
         int okIslands = 0;
         while (true) {
             if (okIslands == islandNum) {
@@ -184,7 +188,7 @@ public class Generator {
                 Tile[] adjacentTiles = adjacentTiles(x, y);
                 int emptyAdjacentTileNum = 0;
 
-                for (int i = 0; i < 6; i++) {
+                for (int i = 0; i < 8; i++) {
                     if (adjacentTiles[i] != null) {
                         if (adjacentTiles[i].getType() == Type.EMPTY) {
                             emptyAdjacentTileNum++;
@@ -194,7 +198,7 @@ public class Generator {
                 if (emptyAdjacentTileNum > 0) {
                     Tile[] emptyAdjacentTiles = new Tile[emptyAdjacentTileNum];
                     emptyAdjacentTileNum = 0;
-                    for (int i = 0; i < 6; i++) {
+                    for (int i = 0; i < 8; i++) {
                         if (adjacentTiles[i] != null) {
                             if (adjacentTiles[i].getType() == Type.EMPTY) {
                                 emptyAdjacentTiles[emptyAdjacentTileNum++]
@@ -225,208 +229,40 @@ public class Generator {
         }
 
     }
-
-    public void cleanLandBorders() {
-        int x_cuttableLength = (int) (m.getWidth() * 0.04)
-            > 1 ? (int) (m.getWidth() * 0.04) : 2;
-        int y_cuttableLength = (int) (m.getHeight() * 0.04)
-            > 1 ? (int) (m.getHeight() * 0.04) : 2;
-        double chanceToRemove = 0.9;
-        int succession_1 = 0;
-        int succession_2 = 0;
-        int removedAmount = 0;
-        for (int x = 1; x < m.getWidth(); x++) {
-            if (m.getMap()[x][1].getType() == Type.LAND) {
-                succession_1++;
-            } else {
-                succession_1 = 0;
-            }
-            if (succession_1 == x_cuttableLength) {
-                if (rng.nextDouble() < chanceToRemove) {
-                    removedAmount = x_cuttableLength
-                        - rng.nextInt((int) (x_cuttableLength * 0.4) > 0 ?
-                            (int) (x_cuttableLength * 0.4) : 1);
-                    if (removedAmount <= 0) {
-                        removedAmount = 1;
-                    }
-                    for (int i = x; i > x - removedAmount; i--) {
-                        m.getMap()[i][1].setType(Type.SEA);
-                    }
-                }
-                succession_1 = rng.nextInt(x_cuttableLength)
-                    - rng.nextInt(x_cuttableLength);
-            }
-            if (m.getMap()[x][2].getType() == Type.LAND && removedAmount > 0) {
-                succession_2 += removedAmount;
-            }
-            if (succession_2 >= (x_cuttableLength - 1)) {
-                if (rng.nextDouble() < chanceToRemove) {
-                    removedAmount -= rng.nextInt(3);
-                    if (removedAmount <= 0) {
-                        removedAmount = 1;
-                    }
-                    for (int i = x; i > x - removedAmount; i--) {
-                        m.getMap()[i][2].setType(Type.SEA);
-                    }
-                }
-                succession_2 = rng.nextInt((x_cuttableLength - 1))
-                    - rng.nextInt((x_cuttableLength - 1));
-            }
-            removedAmount = 0;
-            
-        }
-        // System.out.println("Processed top");
-        succession_1 = 0;
-        succession_2 = 0;
-        for (int x = 1; x < m.getWidth(); x++) {
-            if (m.getMap()[x][m.getHeight() - 2].getType() == Type.LAND) {
-                succession_1++;
-            } else {
-                succession_1 = 0;
-            }
-            if (succession_1 == x_cuttableLength) {
-                if (rng.nextDouble() < chanceToRemove) {
-                    removedAmount = x_cuttableLength
-                        - rng.nextInt((int) (x_cuttableLength * 0.4) > 0 ?
-                            (int) (x_cuttableLength * 0.4) : 1);
-                    if (removedAmount <= 0) {
-                        removedAmount = 1;
-                    }
-                    for (int i = x; i > x - removedAmount; i--) {
-                        m.getMap()[i][m.getHeight() - 2].setType(Type.SEA);
-                    }
-                }
-                succession_1 = rng.nextInt(x_cuttableLength)
-                    - rng.nextInt(x_cuttableLength);
-            }
-            if (m.getMap()[x][m.getHeight() - 3].getType() == Type.LAND
-                    && removedAmount > 0) {
-                succession_2 += removedAmount;
-            }
-            if (succession_2 >= x_cuttableLength - 1) {
-                if (rng.nextDouble() < chanceToRemove) {
-                    removedAmount -= rng.nextInt(3);
-                    if (removedAmount <= 0) {
-                        removedAmount = 1;
-                    }
-                    for (int i = x; i > x - removedAmount; i--) {
-                        m.getMap()[i][m.getHeight() - 3].setType(Type.SEA);
-                    }
-                }
-                succession_2 = rng.nextInt((x_cuttableLength - 1))
-                    - rng.nextInt((x_cuttableLength - 1));
-            }
-            removedAmount = 0;
-        }
-        // System.out.println("Processed below");
-        succession_1 = 0;
-        succession_2 = 0;
-        for (int y = 1; y < m.getHeight() - 2; y++) {
-            if (m.getMap()[1][y].getType() == Type.LAND) {
-                succession_1++;
-            } else {
-                succession_1 = 0;
-            }  
-            if (succession_1 == y_cuttableLength) {
-                if (rng.nextDouble() < chanceToRemove) {
-                    // Removes the entire length or slightly less
-                    removedAmount = y_cuttableLength
-                        - rng.nextInt((int) (y_cuttableLength * 0.4) > 0 ?
-                            (int) (y_cuttableLength * 0.4) : 1);
-                    if (removedAmount <= 0) {
-                        removedAmount = 1;
-                    }
-                    for (int i = y; i > y - removedAmount; i--) {
-                        m.getMap()[1][i].setType(Type.SEA);
-                    }
-                }
-                succession_1 = rng.nextInt(y_cuttableLength)
-                    - rng.nextInt(y_cuttableLength);
-            }
-            if (m.getMap()[2][y].getType() == Type.LAND && removedAmount > 0) {
-                succession_2 += removedAmount;
-            }
-            if (succession_2 >= (y_cuttableLength - 1)) {
-                if (rng.nextDouble() < chanceToRemove) {
-                    removedAmount -= rng.nextInt(3);
-                    if (removedAmount <= 0) {
-                        removedAmount = 1;
-                    }
-                    for (int i = y; i > y - removedAmount; i--) {
-                        m.getMap()[2][i].setType(Type.SEA);
-                    }
-                }
-                succession_2 = rng.nextInt((y_cuttableLength - 1))
-                    - rng.nextInt((y_cuttableLength - 1));
-            }
-        }
-        // System.out.println("Processed left");
-        succession_1 = 0;
-        succession_2 = 0;
-        for (int y = 1; y < m.getHeight() - 2; y++) {
-            if (m.getMap()[m.getWidth() - 2][y].getType() == Type.LAND) {
-                succession_1++;
-            } else {
-                succession_1 = 0;
-            }
-            if (succession_1 == y_cuttableLength) {
-                if (rng.nextDouble() < chanceToRemove) {
-                    removedAmount = y_cuttableLength
-                        - rng.nextInt((int) (y_cuttableLength * 0.6) > 0 ?
-                            (int) (y_cuttableLength * 0.6) : 1);
-                    if (removedAmount <= 0) {
-                        removedAmount = 1;
-                    }
-                    for (int i = y; i > y - removedAmount; i--) {
-                        m.getMap()[m.getWidth() - 2][i].setType(Type.SEA);
-                    }
-                }
-                succession_1 = rng.nextInt(y_cuttableLength)
-                    - rng.nextInt(y_cuttableLength);
-            }
-            if (m.getMap()[m.getWidth() - 3][y].getType() == Type.LAND
-                && removedAmount > 0) {
-                succession_2 += removedAmount;
-            }
-            if (succession_2 >= y_cuttableLength - 1) {
-                if (rng.nextDouble() < chanceToRemove) {
-                    removedAmount -= rng.nextInt(3);
-                    if (removedAmount <= 0) {
-                        removedAmount = 1;
-                    }
-                    for (int i = y; i > y - removedAmount; i--) {
-                        m.getMap()[m.getWidth() - 3]
-                            [i > 1 ? i : 0].setType(Type.SEA);
-                    }
-                }
-                succession_2 = rng.nextInt(y_cuttableLength - 1)
-                    - rng.nextInt(y_cuttableLength - 1);
-            }
-            removedAmount = 0;
-        }
-        // System.out.println("Processed right");
-        
-    }
-
     // If there are lonely tiles that are 
     // not attached to any tile of the same type,
     // those lonely tiles are made to conform to the surroundings.
-    public void removeSingles() {
-        Type current = m.getTile(1, 1).getType();
+    // Limit defines the amount of tiles that,
+    // when grouped together, counts as "single"
+    public void removeSingles(int limit) {
 
-        for (int x = 1; x < m.getWidth() - 1; x++) {
-            for (int y = 1; y < m.getHeight() - 1; y++) {
+        Type current = m.getTile(0, 0).getType();
+
+        for (int x = 0; x < m.getWidth(); x++) {
+            for (int y = 0; y < m.getHeight(); y++) {
                 if (m.getTile(x, y).getType() != current) {
                     Tile[] surroundingTiles = adjacentTiles(x, y);
-                    boolean mustBeRemoved = true;
+                    int similarTiles = 0;
                     for (int i = 0; i < surroundingTiles.length; i++) {
-                        if (surroundingTiles[i].getType()
+                        if (surroundingTiles[i] != null) {
+                            if (surroundingTiles[i].getType()
                                 == m.getTile(x, y).getType()) {
-                            mustBeRemoved = false;
-                            break;
+                                similarTiles++;
+                                if (similarTiles == limit) {
+                                    break;
+                                }
+                            }
                         }
                     }
-                    if (mustBeRemoved) {
+                    if (similarTiles < limit && limit >= 4) {
+                        if (similarTiles < limit - 1) {
+                            m.getTile(x, y).setType(current);
+                        } else if (similarTiles == limit - 1) {
+                            if (rng.nextDouble() < 0.5) {
+                                m.getTile(x, y).setType(current);
+                            }
+                        }
+                    } else if (similarTiles < limit) {
                         m.getTile(x, y).setType(current);
                     } else {
                         current = m.getTile(x, y).getType();
@@ -436,28 +272,152 @@ public class Generator {
         }
     }
 
-    // TODO
-    // Determine if the SEA-area should be a lake or not
-    // private void fillInLakes() {}
+    // Converts Sea-areas into Lakes
+    // if they do not touch the border; are surrounded by land
+    private void processEntities() {
+        Tile[][] entities = entities();
+        for (Tile[] entity: entities) {
+            if (entity[0].getType() == Type.SEA) {
+                if (!areaConnectedToBorder(entity)) {
+                    for (Tile tile: entity) {
+                        tile.setType(Type.LAKE);
+                    }
+                }
+            }
+        }
+    }
 
-    // TODO
     // Calculate if the area of tiles touches the border at any point
-    // private boolean areaConnectedToBorder(Tile tile) {
-    //     boolean connected = false;
-    //     return connected;
-    // }
+    private boolean areaConnectedToBorder(Tile[] area) {
+        boolean connected = false;
+        for (Tile tile: area) {
+            if (tile.getX() == 0 || tile.getX() == m.getWidth() - 1 
+                || tile.getY() == 0 || tile.getY() == m.getHeight() - 1) {
+                connected = true;
+                break;
+            }
+        }
+        return connected;
+    }
+
+    private Tile[][] entities() {
+        Tile[][] entities = new Tile[m.getWidth() * m.getHeight() / 2][];
+        int ind = 0;
+        boolean[][] processed = new boolean[m.getWidth()][m.getHeight()];
+        for (int x = 0; x < m.getWidth(); x++) {
+            for (int y = 0; y < m.getHeight(); y++) {
+                if (processed[x][y]) {
+                    continue;
+                } else {
+                    Tile[] entity = entityAt(x, y, processed);
+                    entities[ind] = entity;
+                    ind++;
+                }
+            }
+        }
+        Tile[][] final_entities = new Tile[ind][];
+        for (int i = 0; i < ind; i++) {
+            final_entities[i] = entities[i];
+        }
+        return final_entities;
+    }
+
+    // A group of Tiles of same type that are linked together through adjacency
+    private Tile[] entityAt(int x, int y, boolean[][] processed) {
+        amt = 1;
+        boolean[][] included = new boolean[m.getWidth()][m.getHeight()];
+        boolean[][] flagged = new boolean[m.getWidth()][m.getHeight()];
+        included[x][y] = true;
+        processTile(x, y, processed, included, flagged);
+        Tile[] tiles = new Tile[amt];
+        int ind = 0;
+        for (int i = 0; i < m.getWidth(); i++) {
+            for (int j = 0; j < m.getHeight(); j++) {
+                if (included[i][j]) {
+                    tiles[ind++] = m.getTile(i, j);
+                }
+            }
+        }
+        return tiles;
+    }
+
+    private void processTile(int x, int y,
+        boolean[][] processed, boolean[][] included, boolean[][] flagged) {
+        if (processed[x][y]) {
+            return;
+        }
+        included[x][y] = true;
+        Tile[] processable = unprocessedSimilarAdjacent(x, y,
+            processed, included, flagged);
+        if (processable != null) {
+            for (int i = 0; i < processable.length; i++) {
+                if (!(processed[processable[i].getX()][processable[i].getY()]
+                    || included[processable[i].getX()]
+                        [processable[i].getY()])) {
+                    processTile(processable[i].getX(), processable[i].getY(),
+                        processed, included, flagged);
+                }
+            }
+        }
+        processed[x][y] = true;
+    }
+
+    private Tile[] unprocessedSimilarAdjacent(int x, int y,
+        boolean[][] processed, boolean[][] included, boolean[][] flagged) {
+        Tile[] tiles = new Tile[8];
+        int num = 0;
+        for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+                if (x + i < 0 || x + i > m.getWidth() - 1
+                    || y + j < 0 || y + j > m.getHeight() - 1) {
+                    continue;
+                } else if (i == 0 && j == 0) {
+                    continue;
+                } else if (processed[x + i][y + j]) {
+                    continue;
+                } else if (included[x + i][y + j]) {
+                    continue;
+                } else if (flagged[x + i][y + j]) {
+                    continue;
+                }  else if (m.getTile(x + i, y + j).getType()
+                    == m.getTile(x, y).getType()) {
+                    tiles[num] = m.getTile(x + i, y + j);
+                    flagged[x + i][y + j] = true;
+                    amt++;
+                    num++;
+                }
+            }
+        }
+        if (num == 0) {
+            return null;
+        } else {
+            Tile[] final_tiles = new Tile[num];
+            for (int i = 0; i < num; i++) {
+                final_tiles[i] = tiles[i];
+            }
+            return final_tiles;
+        }
+    }
+    
+    private void sortTileArray(Tile[] arr) {
+        for (int i = 0; i < arr.length - 1; i++) {  
+            for (int j = i + 1; j < arr.length; j++) { 
+                // System.out.println(i + " compared to " + j);
+                Tile tmp;
+                if (arr[i].compareTo(arr[j]) == 1) {  
+                    tmp = arr[i];  
+                    arr[i] = arr[j];  
+                    arr[j] = tmp;  
+                }
+            }
+        }
+    }
 
     public Tile[] adjacentTiles(int x, int y) {
-        boolean xIsEven = x % 2 == 0;
-        Tile[] tiles = new Tile[6];
+        Tile[] tiles = new Tile[8];
         int ind = 0;
         for (int i = -1; i <= 1; i++) {
             for (int j = -1; j <= 1; j++) {
-                if (xIsEven && i != 0 && j == 1) {
-                    continue;
-                } else if (!xIsEven && i != 0 && j == -1) {
-                    continue;
-                }
                 if (x + i < 0 || x + i > m.getWidth() - 1
                     || y + j < 0 || y + j > m.getHeight() - 1) {
                     tiles[ind] = null;
