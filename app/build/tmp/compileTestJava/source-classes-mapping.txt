@@ -2,7 +2,7 @@ karttageneraattori/TileTest.java
  karttageneraattori.TileTest
 karttageneraattori/TileQueueTest.java
  karttageneraattori.TileQueueTest
-karttageneraattori/GeneratorTest.java
- karttageneraattori.GeneratorTest
 karttageneraattori/MapTest.java
  karttageneraattori.MapTest
+karttageneraattori/GeneratorTest.java
+ karttageneraattori.GeneratorTest

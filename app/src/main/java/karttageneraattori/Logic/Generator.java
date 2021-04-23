@@ -279,8 +279,7 @@ public class Generator {
     // Converts Sea-areas into Lakes
     // if they do not touch the border
     // which means they are surrounded by land
-    private void processEntities() {
-
+    public void processEntities() {
         double chanceToDiscardTiny = 0.7;
         double chanceToDiscardSmall = 0.4;
         int tiny_size = (int) (m.getWidth() * m.getHeight() * 0.005);
@@ -319,7 +318,7 @@ public class Generator {
         }
     }
 
-    private void discardEntity(Tile[] entity) {
+    public void discardEntity(Tile[] entity) {
         Type newType = typeAdjacentToEntity(entity);
         for (Tile tile: entity) {
             tile.setType(newType);
@@ -328,7 +327,7 @@ public class Generator {
 
     // Returns the type of the area adjacent to given entity.
     // Determines what type a discarded lake or island should be turned into.
-    private Type typeAdjacentToEntity(Tile[] entity) {
+    public Type typeAdjacentToEntity(Tile[] entity) {
         Type entityType = entity[0].getType();
         for (Tile tile: entity) {
             for (Tile t: adjacentTiles(tile.getX(), tile.getY())) {
@@ -343,7 +342,7 @@ public class Generator {
     }
 
     // Checks if the area of tiles touches the border at any point
-    private boolean areaConnectedToBorder(Tile[] area) {
+    public boolean areaConnectedToBorder(Tile[] area) {
         boolean connected = false;
         for (Tile tile: area) {
             if (tile.getX() == 0 || tile.getX() == m.getWidth() - 1 
@@ -356,7 +355,7 @@ public class Generator {
     }
 
     // Checks if the area does not touch sea in any point.
-    private boolean areaSurroundedByLand(Tile[] area) {
+    public boolean areaSurroundedByLand(Tile[] area) {
         boolean notAdjacentToSea = true;
         areaChecking:
         for (Tile tile: area) {
@@ -373,7 +372,7 @@ public class Generator {
     }
 
     // Builds a list of all the areas, which are lists of Tiles
-    private Tile[][] entities() {
+    public Tile[][] entities() {
         Tile[][] entities = new Tile[(int) (m.getWidth() * m.getHeight())][];
         int ind = 0;
         boolean[][] processed = new boolean[m.getWidth()][m.getHeight()];
@@ -396,7 +395,7 @@ public class Generator {
     }
 
     // A group of Tiles of same type that are linked together through adjacency
-    private Tile[] entityAt(int x, int y, boolean[][] processed) {
+    public Tile[] entityAt(int x, int y, boolean[][] processed) {
         amt = 1;
         boolean[][] included = new boolean[m.getWidth()][m.getHeight()];
         boolean[][] flagged = new boolean[m.getWidth()][m.getHeight()];
@@ -416,7 +415,7 @@ public class Generator {
 
     // Adjacent tiles of the same type are pushed into a TileQueue
     //  and during the processing, included-array is filled
-    private void searchEntity(
+    public void searchEntity(
         boolean[][] processed, boolean[][] included, boolean[][] flagged) {
         while (true) {
             Tile tile = tq.pop();
@@ -439,7 +438,7 @@ public class Generator {
         }
     }
 
-    private Tile[] unprocessedSimilarAdjacent(int x, int y,
+    public Tile[] unprocessedSimilarAdjacent(int x, int y,
         boolean[][] processed, boolean[][] included, boolean[][] flagged) {
         Tile[] tiles = new Tile[8];
         int num = 0;
