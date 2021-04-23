@@ -4,7 +4,8 @@
 .vscode
 *.tmp
 **tmp
-app/build/tmp/**
+app/build/
+app/build/**
 **/build/
 !src/**/build/
 

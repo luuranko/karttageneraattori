@@ -12,13 +12,15 @@ public class Generator {
     private Random rng;
     private Map m;
     private int amt; // Used when determining areas
+    private TileQueue tq;
+
 
     public Generator(int islandNum, double landToSeaRatio, Random random) {
         this.m = new Map(100, 100);
         this.islandNum = islandNum;
         this.landToSeaRatio = landToSeaRatio;
         this.rng = random;
-        amt = 0;
+        tq = new TileQueue(m.getWidth() * m.getHeight());
     }
 
     public Generator(Random random) {
@@ -26,7 +28,7 @@ public class Generator {
         this.rng = random;
         setIslandNum(2);
         setLandToSeaRatio(0.3);
-        amt = 0;
+        tq = new TileQueue(m.getWidth() * m.getHeight());
     }
 
     public void newMap(int x, int y) {
@@ -88,7 +90,8 @@ public class Generator {
 
         processEntities();
         time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        System.out.println("Filled in lakes in " + time);
+        System.out.println("Filled in lakes"
+            + "and removed some small areas in " + time);
         alg = System.currentTimeMillis();
 
         time = (double) (System.currentTimeMillis() - start) * 0.001;
@@ -273,8 +276,15 @@ public class Generator {
     }
 
     // Converts Sea-areas into Lakes
-    // if they do not touch the border; are surrounded by land
+    // if they do not touch the border
+    // which means they are surrounded by land
     private void processEntities() {
+
+        double chanceToDiscardTiny = 0.7;
+        double chanceToDiscardSmall = 0.4;
+        int tiny_size = (int) (m.getWidth() * m.getHeight() * 0.005);
+        int small_size = (int) (m.getWidth() * m.getHeight() * 0.01);
+        
         Tile[][] entities = entities();
         for (Tile[] entity: entities) {
             if (entity[0].getType() == Type.SEA) {
@@ -284,10 +294,54 @@ public class Generator {
                     }
                 }
             }
+            if (entity.length <= tiny_size) {
+                if (rng.nextDouble() < chanceToDiscardTiny) {
+                    discardEntity(entity);
+                }
+            } else if (entity.length <= small_size) {
+                if (rng.nextDouble() < chanceToDiscardSmall) {
+                    discardEntity(entity);
+                }
+            }
+        }
+
+        // Sometimes islands that have lakes are discarded,
+        // so lakes left floating in the sea must be discarded as well.
+        for (Tile[] entity: entities) {
+            if (entity[0].getType() == Type.LAKE) {
+                if (!areaSurroundedByLand(entity)) {
+                    for (Tile tile: entity) {
+                        tile.setType(Type.SEA);
+                    }
+                }
+            }
         }
     }
 
-    // Calculate if the area of tiles touches the border at any point
+    private void discardEntity(Tile[] entity) {
+        Type newType = typeAdjacentToEntity(entity);
+        for (Tile tile: entity) {
+            tile.setType(newType);
+        }
+    }
+
+    // Returns the type of the area adjacent to given entity.
+    // Determines what type a discarded lake or island should be turned into.
+    private Type typeAdjacentToEntity(Tile[] entity) {
+        Type entityType = entity[0].getType();
+        for (Tile tile: entity) {
+            for (Tile t: adjacentTiles(tile.getX(), tile.getY())) {
+                if (t != null) {
+                    if (t.getType() != entityType) {
+                        return t.getType();
+                    }
+                }
+            }
+        }
+        return entityType;
+    }
+
+    // Checks if the area of tiles touches the border at any point
     private boolean areaConnectedToBorder(Tile[] area) {
         boolean connected = false;
         for (Tile tile: area) {
@@ -300,8 +354,26 @@ public class Generator {
         return connected;
     }
 
+    // Checks if the area does not touch sea in any point.
+    private boolean areaSurroundedByLand(Tile[] area) {
+        boolean notAdjacentToSea = true;
+        areaChecking:
+        for (Tile tile: area) {
+            for (Tile t: adjacentTiles(tile.getX(), tile.getY())) {
+                if (t != null) {
+                    if (t.getType() == Type.SEA) {
+                        notAdjacentToSea = false;
+                        break areaChecking;
+                    }
+                }
+            }
+        }
+        return notAdjacentToSea;
+    }
+
+    // Builds a list of all the areas, which are lists of Tiles
     private Tile[][] entities() {
-        Tile[][] entities = new Tile[m.getWidth() * m.getHeight() / 2][];
+        Tile[][] entities = new Tile[(int) (m.getWidth() * m.getHeight())][];
         int ind = 0;
         boolean[][] processed = new boolean[m.getWidth()][m.getHeight()];
         for (int x = 0; x < m.getWidth(); x++) {
@@ -327,8 +399,8 @@ public class Generator {
         amt = 1;
         boolean[][] included = new boolean[m.getWidth()][m.getHeight()];
         boolean[][] flagged = new boolean[m.getWidth()][m.getHeight()];
-        included[x][y] = true;
-        processTile(x, y, processed, included, flagged);
+        tq.push(m.getTile(x, y));
+        searchEntity(processed, included, flagged);
         Tile[] tiles = new Tile[amt];
         int ind = 0;
         for (int i = 0; i < m.getWidth(); i++) {
@@ -341,25 +413,29 @@ public class Generator {
         return tiles;
     }
 
-    private void processTile(int x, int y,
+    // Adjacent tiles of the same type are pushed into a TileQueue
+    //  and during the processing, included-array is filled
+    private void searchEntity(
         boolean[][] processed, boolean[][] included, boolean[][] flagged) {
-        if (processed[x][y]) {
-            return;
-        }
-        included[x][y] = true;
-        Tile[] processable = unprocessedSimilarAdjacent(x, y,
+        while (true) {
+            Tile tile = tq.pop();
+            included[tile.getX()][tile.getY()] = true;
+            Tile[] adjacentTiles
+                = unprocessedSimilarAdjacent(tile.getX(), tile.getY(),
             processed, included, flagged);
-        if (processable != null) {
-            for (int i = 0; i < processable.length; i++) {
-                if (!(processed[processable[i].getX()][processable[i].getY()]
-                    || included[processable[i].getX()]
-                        [processable[i].getY()])) {
-                    processTile(processable[i].getX(), processable[i].getY(),
-                        processed, included, flagged);
+            if (adjacentTiles != null) {
+                for (Tile t: adjacentTiles) {
+                    if (!(processed[t.getX()][t.getY()]
+                        || included[t.getX()][t.getY()])) {
+                        tq.push(t);
+                    }
                 }
             }
+            processed[tile.getX()][tile.getY()] = true;
+            if (tq.isEmpty()) {
+                break;
+            }
         }
-        processed[x][y] = true;
     }
 
     private Tile[] unprocessedSimilarAdjacent(int x, int y,
@@ -402,7 +478,6 @@ public class Generator {
     private void sortTileArray(Tile[] arr) {
         for (int i = 0; i < arr.length - 1; i++) {  
             for (int j = i + 1; j < arr.length; j++) { 
-                // System.out.println(i + " compared to " + j);
                 Tile tmp;
                 if (arr[i].compareTo(arr[j]) == 1) {  
                     tmp = arr[i];  

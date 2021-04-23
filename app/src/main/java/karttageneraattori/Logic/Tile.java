@@ -31,14 +31,24 @@ public class Tile implements Comparable<Tile> {
     }
 
     @Override
-    public int compareTo(Tile other) {
-        if (other.getX() > this.getX()) {
-            return -1;
-        } else if (other.getY() > this.getY()) {
-            return -1;
-        }
-        return 1;
+    public String toString() {
+        return "(" + x + ", " + y + "): " + type;
     }
 
-    
+    @Override
+    public int compareTo(Tile other) {
+        if (other.getY() > this.getY()) {
+            return -1;
+        } else if (other.getY() < this.getY()) {
+            return 1;
+        } else {
+            if (other.getX() > this.getX()) {
+                return -1;
+            } else if (other.getX() < this.getX()) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+    }
 }
