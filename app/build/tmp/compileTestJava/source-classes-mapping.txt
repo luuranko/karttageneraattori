@@ -1,6 +1,8 @@
 karttageneraattori/TileTest.java
  karttageneraattori.TileTest
-karttageneraattori/MapTest.java
- karttageneraattori.MapTest
+karttageneraattori/TileQueueTest.java
+ karttageneraattori.TileQueueTest
 karttageneraattori/GeneratorTest.java
  karttageneraattori.GeneratorTest
+karttageneraattori/MapTest.java
+ karttageneraattori.MapTest

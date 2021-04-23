@@ -16,7 +16,6 @@ public class GeneratorTest {
     private Generator g;
     
     @Before public void init() {
-        // this.rng = new Random(4266642);
         this.rng = new Random();
         this.g = new Generator(rng);
     }

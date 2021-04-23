@@ -1,8 +1,14 @@
 # Karttageneraattori
 
-[Määrittelydokumentti](https://github.com/luuranko/karttageneraattori/blob/main/documentation/maarittely.md)
+[Määrittely](https://github.com/luuranko/karttageneraattori/blob/main/documentation/maarittely.md)
+
+[Toteutus](https://github.com/luuranko/karttageneraattori/blob/main/documentation/toteutus.md)
+
+[Testaus](https://github.com/luuranko/karttageneraattori/blob/main/documentation/testaus.md)
 
 ### Viikkoraportit
+
+[Viikko 5](https://github.com/luuranko/karttageneraattori/blob/main/documentation/viikkoraportit/viikkoraportti_5.md)
 
 [Viikko 4](https://github.com/luuranko/karttageneraattori/blob/main/documentation/viikkoraportit/viikkoraportti_4.md)
 

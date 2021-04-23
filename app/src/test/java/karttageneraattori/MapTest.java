@@ -4,6 +4,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertTrue;
 
 import karttageneraattori.Logic.Map;
+import karttageneraattori.Logic.Tile;
 
 public class MapTest {
     @Test public void testConstructor1() {
@@ -46,5 +47,17 @@ public class MapTest {
         Map m1 = new Map(16, 16);
         Map m2 = new Map(m1, 15, 15);
         assertTrue(m2.getWidth() == 15 && m2.getHeight() == 15);
+    }
+
+    @Test public void testRecycleConstructor5() {
+        Map m1 = new Map(7, 5);
+        Map m2 = new Map(m1, 7, 7);
+        assertTrue(m2.getWidth() == 7 && m2.getHeight() == 7);
+    }
+
+    @Test public void testGetTile() {
+        Map m1 = new Map(5);
+        m1.getMap()[1][1] = new Tile(1, 1);
+        assertTrue(m1.getTile(1, 1).getX() == 1);
     }
 }

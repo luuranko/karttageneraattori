@@ -12,30 +12,25 @@ public class TileQueue {
         list = new Tile[cap];
     }
 
-    public TileQueue(TileQueue tq) {
-        list = tq.getList();
-        cap = list.length;
-    }
-
     public int getSize() {
         return size;
     }
 
-    public Tile[] getList() {
-        return list;
+    public int getCap() {
+        return cap;
     }
 
-    public void push(Tile t) {
+    public boolean push(Tile t) {
         if (isFull()) {
-            return;
+            return false;
         } else {
-            
             if (tail == cap) {
                 tail = 0;
             }
             list[tail] = t;
             size++;
             tail++;
+            return true;
         }
     }
 

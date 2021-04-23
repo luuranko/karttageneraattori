@@ -11,7 +11,8 @@ public class Generator {
     private double landToSeaRatio;
     private Random rng;
     private Map m;
-    private int amt; // Used when determining areas
+    // Used when determining areas
+    private int amt; 
     private TileQueue tq;
 
 
@@ -65,34 +66,34 @@ public class Generator {
      */
     public void initMap() {
         long start = System.currentTimeMillis();
-        long alg = start;
+        // long alg = start;
         double time;
 
         createIslands();
-        time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        System.out.println("Islands created in " + time);
-        alg = System.currentTimeMillis();
+        // time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        // System.out.println("Islands created in " + time);
+        // alg = System.currentTimeMillis();
 
         removeSingles(5);
-        time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        System.out.println("Removed lonely tiles (5) in " + time);
-        alg = System.currentTimeMillis();
+        // time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        // System.out.println("Removed lonely tiles (5) in " + time);
+        // alg = System.currentTimeMillis();
 
         removeSingles(2);
-        time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        System.out.println("Removed lonely tiles (2) in " + time);
-        alg = System.currentTimeMillis();
+        // time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        // System.out.println("Removed lonely tiles (2) in " + time);
+        // alg = System.currentTimeMillis();
 
         fillInSea();
-        time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        System.out.println("Filled in sea in " + time);
-        alg = System.currentTimeMillis();
+        // time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        // System.out.println("Filled in sea in " + time);
+        // alg = System.currentTimeMillis();
 
         processEntities();
-        time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        System.out.println("Filled in lakes"
-            + "and removed some small areas in " + time);
-        alg = System.currentTimeMillis();
+        // time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        // System.out.println("Filled in lakes"
+        //     + "and removed some small areas in " + time);
+        // alg = System.currentTimeMillis();
 
         time = (double) (System.currentTimeMillis() - start) * 0.001;
         System.out.println("Generating the map took "
@@ -475,18 +476,20 @@ public class Generator {
         }
     }
     
-    private void sortTileArray(Tile[] arr) {
-        for (int i = 0; i < arr.length - 1; i++) {  
-            for (int j = i + 1; j < arr.length; j++) { 
-                Tile tmp;
-                if (arr[i].compareTo(arr[j]) == 1) {  
-                    tmp = arr[i];  
-                    arr[i] = arr[j];  
-                    arr[j] = tmp;  
-                }
-            }
-        }
-    }
+
+    // // To be used later
+    // private void sortTileArray(Tile[] arr) {
+    //     for (int i = 0; i < arr.length - 1; i++) {  
+    //         for (int j = i + 1; j < arr.length; j++) { 
+    //             Tile tmp;
+    //             if (arr[i].compareTo(arr[j]) == 1) {  
+    //                 tmp = arr[i];  
+    //                 arr[i] = arr[j];  
+    //                 arr[j] = tmp;  
+    //             }
+    //         }
+    //     }
+    // }
 
     public Tile[] adjacentTiles(int x, int y) {
         Tile[] tiles = new Tile[8];
