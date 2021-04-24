@@ -1,5 +1,7 @@
 # Karttageneraattori
 
+![GitHub Actions](https://github.com/luuranko/karttageneraattori/workflows/Java%20CI%20with%20Gradle/badge.svg)
+
 [Määrittely](https://github.com/luuranko/karttageneraattori/blob/main/documentation/maarittely.md)
 
 [Toteutus](https://github.com/luuranko/karttageneraattori/blob/main/documentation/toteutus.md)
