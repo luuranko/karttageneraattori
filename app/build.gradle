@@ -36,7 +36,7 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClass = 'karttageneraattori.App'
+    mainClass = 'karttageneraattori.UI.App'
 }
 
 run {
@@ -54,11 +54,7 @@ jacocoTestReport {
     }
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it,
-                exclude: [
-                    'UI/**'
-                    ]
-                )
+            fileTree(dir: it, exclude: '**/UI/**')
         }))
     }
 }

@@ -1,5 +1,4 @@
-package karttageneraattori;
-import karttageneraattori.UI.GUI;
+package karttageneraattori.UI;
 
 public class App {
 
