@@ -313,6 +313,38 @@ public class Generator {
                     for (Tile tile: entity) {
                         tile.setType(Type.SEA);
                     }
+                } else {
+                    // Borders given for lakes
+                    for (Tile tile: entity) {
+                        int lakeTiles = 0;
+                        int nulls = 0;
+                        for (Tile t: adjacentTiles(tile.getX(), tile.getY())) {
+                            if (t == null) {
+                                nulls++;
+                            } else if (t.getType() == Type.LAKE
+                                || t.getType() == Type.LAKE_BORDER) {
+                                lakeTiles++;
+                            }
+                        }
+                        if (lakeTiles < 8 - nulls) {
+                            tile.setType(Type.LAKE_BORDER);
+                        }
+                    }
+                }
+            } else if (entity[0].getType() == Type.LAND) {
+                // Borders given for islands
+                for (Tile tile: entity) {
+                    int seaTiles = 0;
+                    for (Tile t: adjacentTiles(tile.getX(), tile.getY())) {
+                        if (t == null) {
+                            continue;
+                        } else if (t.getType() == Type.SEA) {
+                            seaTiles++;
+                        }
+                    }
+                    if (seaTiles >= 2) {
+                        tile.setType(Type.LAND_BORDER);
+                    }
                 }
             }
         }

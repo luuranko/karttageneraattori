@@ -8,5 +8,7 @@ public enum Type {
     EMPTY,
     SEA,
     LAND,
-    LAKE;
+    LAND_BORDER,
+    LAKE,
+    LAKE_BORDER;
 }

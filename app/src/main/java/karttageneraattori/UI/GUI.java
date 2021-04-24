@@ -21,7 +21,6 @@ import karttageneraattori.Logic.Tile;
 import karttageneraattori.Logic.Type;
 import javafx.scene.Group;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.image.WritableImage;
@@ -50,11 +49,15 @@ public class GUI extends Application {
             for (int x = 0; x < width; x++) {
                 inspected = map.getMap()[x][y];
                 if (inspected.getType() == Type.SEA) {
-                    pw.setColor(x, y, Color.DARKBLUE);
+                    pw.setColor(x, y, Color.NAVY);
                 } else if (inspected.getType() == Type.LAND) {
                     pw.setColor(x, y, Color.MOCCASIN);
+                } else if (inspected.getType() == Type.LAND_BORDER) {
+                    pw.setColor(x, y, Color.DARKGOLDENROD);
                 } else if (inspected.getType() == Type.LAKE) {
                     pw.setColor(x, y, Color.LIGHTBLUE);
+                } else if (inspected.getType() == Type.LAKE_BORDER) {
+                    pw.setColor(x, y, Color.SKYBLUE);
                 } else {
                     pw.setColor(x, y, Color.RED);
                 }
@@ -67,11 +70,6 @@ public class GUI extends Application {
 
     private StackPane pixelMapField(int width, int height) {
         StackPane pane = new StackPane();
-
-        Rectangle base = new Rectangle(0, 0, width, height);
-        base.setFill(Color.DARKBLUE);
-        pane.getChildren().add(base);
-        pane.setAlignment(base, Pos.TOP_LEFT);
 
         gen.newValues();
         gen.newMap(width, height);
