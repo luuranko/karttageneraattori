@@ -1,6 +1,7 @@
 # Karttageneraattori
 
 ![GitHub Actions](https://github.com/luuranko/karttageneraattori/workflows/Java%20CI%20with%20Gradle/badge.svg)
+[![codecov](https://codecov.io/gh/luuranko/karttageneraattori/branch/main/graph/badge.svg?token=HQKIK60FLV)](https://codecov.io/gh/luuranko/karttageneraattori)
 
 [Määrittely](https://github.com/luuranko/karttageneraattori/blob/main/documentation/maarittely.md)
 
