@@ -20,3 +20,4 @@ Kun n on ruutujen määrä, sekä aika- että tilavaativuudet ovat O(n log n).
 
 Lähteet:
 - [Polygonal Map Generation](http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation/)
+- Tirakirja (jono, syvyyshaku)
