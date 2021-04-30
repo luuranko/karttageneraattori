@@ -9,6 +9,8 @@ public class Generator {
     
     private int islandNum;
     private double landToSeaRatio;
+    private double forestChance;
+    private double chanceToDiscardSmall;
     private Random rng;
     private Map m;
     // Used when determining areas
@@ -16,10 +18,13 @@ public class Generator {
     private TileQueue tq;
 
 
-    public Generator(int islandNum, double landToSeaRatio, Random random) {
+    public Generator(int islandNum, double landToSeaRatio,
+        double forestChance, double chanceToDiscardSmall, Random random) {
         this.m = new Map(100, 100);
         this.islandNum = islandNum;
         this.landToSeaRatio = landToSeaRatio;
+        this.forestChance = forestChance;
+        this.chanceToDiscardSmall = chanceToDiscardSmall;
         this.rng = random;
         tq = new TileQueue(m.getWidth() * m.getHeight());
     }
@@ -27,8 +32,10 @@ public class Generator {
     public Generator(Random random) {
         this.m = new Map(100, 100);
         this.rng = random;
-        setIslandNum(2);
-        setLandToSeaRatio(0.3);
+        this.islandNum = 2;
+        this.landToSeaRatio = 0.3;
+        this.forestChance = 0.6;
+        this.chanceToDiscardSmall = 0.5;
         tq = new TileQueue(m.getWidth() * m.getHeight());
     }
 
@@ -40,9 +47,15 @@ public class Generator {
         return m;
     }
 
+    /**
+     * Generates random values for variables
+     *  islandNum, landToSeaRatio, forestChance and chanceToDiscardSmall.
+     */
     public void newValues() {
         setIslandNum(rng.nextInt(3) + 1);
         setLandToSeaRatio(((double) rng.nextInt(4) / 20.0) + 0.2);
+        setForestChance(((double) rng.nextInt(12) / 20) + 0.3); 
+        setChanceToDiscardSmall(((double) rng.nextInt(12) / 20) + 0.2);
     }
 
     public void setIslandNum(int islandNum) {
@@ -53,47 +66,64 @@ public class Generator {
         this.landToSeaRatio = landToSeaRatio;
     }
 
+    public void setForestChance(double forestChance) {
+        this.forestChance = forestChance;
+    }
+
+    public void setChanceToDiscardSmall(double chanceToDiscardSmall) {
+        this.chanceToDiscardSmall = chanceToDiscardSmall;
+    }
+
     /**
      * The Generator's current Map is initialized.
      * The map's borders are made into SEA-tiles.
      * LAND-tiles are placed based on 1-3 random starting points.
      *  Any single tiles are removed
      *  and made to conform to the surrounding tiles.
-     * Remaining EMPTY-tiles are turned into SEA-tiles.
+     *  Remaining EMPTY-tiles are turned into SEA-tiles.
+     *  Very small islands or lakes may be discarded.
      *  Any SEA-areas are turned into LAKE-areas, if landlocked.
-     * <p>
-     * @return      void
+     *  Borders are drawn on LAND- and LAKE-areas.
+     *  FOREST-areas may be created onto LAND-areas.
+     *  Lastly, any single tiles are removed again,
+     *  to tidy up the generated forests.
      */
     public void initMap() {
         long start = System.currentTimeMillis();
-        // long alg = start;
+        long alg = start;
         double time;
 
-        createIslands();
-        // time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        // System.out.println("Islands created in " + time);
-        // alg = System.currentTimeMillis();
+        landforming();
+        time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        System.out.println("Islands formed in " + time);
+        alg = System.currentTimeMillis();
 
         removeSingles(5);
-        // time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        // System.out.println("Removed lonely tiles (5) in " + time);
-        // alg = System.currentTimeMillis();
+        time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        System.out.println("Removed lonely tiles (5) in " + time);
+        alg = System.currentTimeMillis();
 
         removeSingles(2);
-        // time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        // System.out.println("Removed lonely tiles (2) in " + time);
-        // alg = System.currentTimeMillis();
+        time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        System.out.println("Removed lonely tiles (2) in " + time);
+        alg = System.currentTimeMillis();
 
         fillInSea();
-        // time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        // System.out.println("Filled in sea in " + time);
-        // alg = System.currentTimeMillis();
+        time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        System.out.println("Filled in sea in " + time);
+        alg = System.currentTimeMillis();
 
         processEntities();
-        // time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        // System.out.println("Filled in lakes"
-        //     + "and removed some small areas in " + time);
-        // alg = System.currentTimeMillis();
+        time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        System.out.println("Filled in lakes, "
+            + "removed some small areas, "
+            + "created forests, and filled in borders in " + time);
+        alg = System.currentTimeMillis();
+
+        removeSingles(3);
+        time = (double) (System.currentTimeMillis() - alg) * 0.001;
+        System.out.println("Removed lonely tiles (2) in " + time);
+        alg = System.currentTimeMillis();
 
         time = (double) (System.currentTimeMillis() - start) * 0.001;
         System.out.println("Generating the map took "
@@ -101,7 +131,9 @@ public class Generator {
     }
 
 
-    // Makes all type EMPTY tiles type SEA
+    /**
+     * Turns any EMPTY Tiles into SEA.
+     */
     public void fillInSea() {
         for (int y = 0; y < m.getHeight(); y++) {
             for (int x = 0; x < m.getWidth(); x++) {
@@ -112,24 +144,27 @@ public class Generator {
         }
     }
 
-    public void createIslands() {
-        int totalTiles = (m.getWidth() - 2) * (m.getHeight() - 2);
-        int landTiles = 0;
-        int landTilesGoal = (int) (totalTiles * landToSeaRatio);
-
-        // Coordinates for islands' starting points
-        int[][] islands_x = new int[islandNum][landTilesGoal + 1];
-        int[][] islands_y = new int[islandNum][landTilesGoal + 1];
+    /**
+     * Sets island starting positions for where forming LAND begins.
+     *  Ensures that the positions are not too close to each other.
+     *  Returns the list of Tiles that belong to each island.
+     *  Requires integer for how many LAND Tiles should be in the Map.
+     * @param int landTilesGoal 
+     * @return Tile[][] islands
+     */
+    public Tile[][] islandsStartPos(int landTilesGoal) {
+        Tile[][] islands = new Tile[islandNum][landTilesGoal + 1];
 
         int minDistance_x = (int) (m.getWidth() * 0.2); 
         int minDistance_y = (int) (m.getHeight() * 0.2);
         minDistance_x = minDistance_x > 1 ? minDistance_x : 2;
         minDistance_y = minDistance_y > 1 ? minDistance_y : 2;
 
-        // Checking that the islands' starting points
-        // are not too close together
         int okIslands = 0;
         while (true) {
+            // When all starting positions have been confirmed as far enough
+            // from the borders and from each other,
+            // the starting positions are ready and the loop breaks.
             if (okIslands == islandNum) {
                 break;
             } else {
@@ -138,58 +173,77 @@ public class Generator {
             for (int i = 0; i < islandNum; i++) {
                 int x;
                 int y;
-                if (islands_x[i][0] == 0) {
+                if (islands[i][0] == null) {
+                    // Ensures that the starting position is not too close
+                    // to the borders of the map
                     x = rng.nextInt(m.getWidth()
                         - 1 - 2 * minDistance_x) + minDistance_x;
                     y = rng.nextInt(m.getHeight()
                         - 1 - 2 * minDistance_y) + minDistance_y;
                 } else {
-                    x = islands_x[i][0];
-                    y = islands_y[i][0];
+                    x = islands[i][0].getX();
+                    y = islands[i][0].getY();
                 }
-                boolean change = false;
+                // Iterates through the other initialized starting positions
+                // and checks if the current one is far enough from them
+                boolean mustResetIsland = false;
                 for (int j = 0; j < islandNum; j++) {
                     if (i == j) {
                         continue;
                     }
-                    if (islands_x[j][0] != 0) {
-                        int x_diff = x - islands_x[j][0];
-                        int y_diff = y - islands_y[j][0];
+                    if (islands[j][0] != null) {
+                        int x_diff = x - islands[j][0].getX();
+                        int y_diff = y - islands[j][0].getY();
                         x_diff = x_diff > 0 ? x_diff : - x_diff;
                         y_diff = y_diff > 0 ? y_diff : - y_diff;
                         if (x_diff < minDistance_x) {
                             x = rng.nextInt(m.getWidth()
                                 - 1 - 2 * minDistance_x) + minDistance_x;
-                            change = true;
+                            mustResetIsland = true;
                         } else if (y_diff < minDistance_y) {
                             y = rng.nextInt(m.getHeight()
                                 - 1 - 2 * minDistance_y) + minDistance_y;
-                            change = true;
+                            mustResetIsland = true;
                         }
                     }
                 }
-                if (change == false) {
+                if (mustResetIsland == false) {
                     okIslands++;
                 }
 
-                islands_x[i][0] = x;
-                islands_y[i][0] = y;
-                
+                islands[i][0] = m.getTile(x, y);
                 m.getMap()[x][y].setType(Type.LAND);
-                landTiles++;
             }
         }
+        return islands;
+    }
+
+    /**
+     * Creates islands based on starting positions. 
+     *  Iterates through the islands and adds a new LAND Tile to each list
+     *  during each loop by picking a random EMPTY Tile from the surrounding
+     *  Tiles of the current Tile. If no EMPTY Tiles surround it, the next
+     *  Tile that will be checked for them will be picked from the previously
+     *  added Tiles. 
+     */
+    public void landforming() {
+        int totalTiles = (m.getWidth()) * (m.getHeight());
+        int landTiles = 0;
+        int landTilesGoal = (int) (totalTiles * landToSeaRatio);
+
+        Tile[][] islands = islandsStartPos(landTilesGoal);
+        landTiles += islandNum;
+
         int[] landTilesPerIsland = new int[islandNum];
         int[] indices = new int[islandNum];
+
         landForming:
         while (landTiles < landTilesGoal) {
             for (int n = 0; n < islandNum; n++) {
-                int x = islands_x[n][indices[n]];
-                int y = islands_y[n][indices[n]];
-                boolean changed = false;
-                Tile chosen = null;
-
-                Tile[] adjacentTiles = adjacentTiles(x, y);
+                Tile chosen = islands[n][indices[n]];
+                boolean changedChosen = false;
+                Tile[] adjacentTiles
+                    = adjacentTiles(chosen.getX(), chosen.getY());
                 int emptyAdjacentTileNum = 0;
 
                 for (int i = 0; i < 8; i++) {
@@ -199,6 +253,7 @@ public class Generator {
                         }
                     }
                 }
+                // Picks a random EMPTY Tile from the adjacent Tiles, if able
                 if (emptyAdjacentTileNum > 0) {
                     Tile[] emptyAdjacentTiles = new Tile[emptyAdjacentTileNum];
                     emptyAdjacentTileNum = 0;
@@ -212,16 +267,18 @@ public class Generator {
                     }
                     chosen = emptyAdjacentTiles[
                         rng.nextInt(emptyAdjacentTileNum)];
-                    changed = true;
+                    changedChosen = true;
                 }
-                if (changed && chosen != null) {
-                    m.getTile(chosen.getX(), chosen.getY()).setType(Type.LAND);
+                // New chosen Tile is set into the island
+                if (changedChosen) {
+                    chosen.setType(Type.LAND);
                     landTilesPerIsland[n]++;
-                    islands_x[n][landTilesPerIsland[n]] = chosen.getX();
-                    islands_y[n][landTilesPerIsland[n]] = chosen.getY();
+                    islands[n][landTilesPerIsland[n]] = chosen;
                     landTiles++;
                     indices[n] = landTilesPerIsland[n];
-
+                // If there were no EMPTY Tiles adjacent, previously added
+                // Tiles are checked for any. If none exist, the loop is
+                // aborted to prevent infinite loops.
                 } else {
                     indices[n]--;
                     if (indices[n] == 0) {
@@ -233,20 +290,24 @@ public class Generator {
         }
 
     }
-    // If there are lonely tiles that are 
-    // not attached to any tile of the same type,
-    // those lonely tiles are made to conform to the surroundings.
-    // Limit defines the amount of tiles that,
-    // when grouped together, counts as "single"
+
+    
+    /**
+     * If there are lonely tiles that are
+     *  not attached to any tile of the same type,
+     *  those lonely tiles are made to conform to the surroundings.
+     *  Limit defines the amount of tiles that,
+     *  when grouped together, count as "single"; too small.
+     * @param int limit
+     */
     public void removeSingles(int limit) {
-
         Type current = m.getTile(0, 0).getType();
-
         for (int x = 0; x < m.getWidth(); x++) {
             for (int y = 0; y < m.getHeight(); y++) {
                 if (m.getTile(x, y).getType() != current) {
                     Tile[] surroundingTiles = adjacentTiles(x, y);
                     int similarTiles = 0;
+                    // Checks the adjacent Tiles for Tiles of similar type.
                     for (int i = 0; i < surroundingTiles.length; i++) {
                         if (surroundingTiles[i] != null) {
                             if (surroundingTiles[i].getType()
@@ -258,32 +319,51 @@ public class Generator {
                             }
                         }
                     }
+                    // Checks if the adjacent similar Tiles are too few.
+                    boolean changeTile = false;
                     if (similarTiles < limit && limit >= 4) {
                         if (similarTiles < limit - 1) {
-                            m.getTile(x, y).setType(current);
+                            changeTile = true;
                         } else if (similarTiles == limit - 1) {
                             if (rng.nextDouble() < 0.5) {
-                                m.getTile(x, y).setType(current);
+                                changeTile = true;
                             }
                         }
                     } else if (similarTiles < limit) {
+                        changeTile = true;
+                    }
+                    Type thisType = m.getTile(x, y).getType();
+                    if (changeTile && thisType != Type.LAND_BORDER
+                        && thisType != Type.LAKE_BORDER) {
                         m.getTile(x, y).setType(current);
                     } else {
-                        current = m.getTile(x, y).getType();
+                        if (m.getTile(x, y).getType() == Type.LAND_BORDER) {
+                            current = Type.LAND;
+                        } else if (m.getTile(x, y).getType()
+                            == Type.LAKE_BORDER) {
+                            current = Type.LAKE;
+                        } else {
+                            current = m.getTile(x, y).getType();
+                        }
                     }
                 }
             }
         }
     }
 
-    // Converts Sea-areas into Lakes
-    // if they do not touch the border
-    // which means they are surrounded by land
+    /**
+     * Makes a list of entities and processes them:
+     *  turning inland SEA-areas into LAKE,
+     *  discarding some areas that are very small,
+     *  creating borders for islands and lakes, 
+     *  and possibly creating forest on islands.
+     */
     public void processEntities() {
-        double chanceToDiscardTiny = 0.7;
-        double chanceToDiscardSmall = 0.4;
-        int tiny_size = (int) (m.getWidth() * m.getHeight() * 0.005);
-        int small_size = (int) (m.getWidth() * m.getHeight() * 0.01);
+        double chanceToDiscardTiny = chanceToDiscardSmall + 0.3 < 0.95
+            ? chanceToDiscardSmall + 0.3 : 0.95;
+
+        int tiny_size = (int) (m.getWidth() * m.getHeight() * 0.0075);
+        int small_size = (int) (m.getWidth() * m.getHeight() * 0.015);
         
         Tile[][] entities = entities();
         for (Tile[] entity: entities) {
@@ -294,6 +374,7 @@ public class Generator {
                     }
                 }
             }
+            // Discarding some entities that are small to reduce archipelago
             if (entity.length <= tiny_size) {
                 if (rng.nextDouble() < chanceToDiscardTiny) {
                     discardEntity(entity);
@@ -305,10 +386,11 @@ public class Generator {
             }
         }
 
-        // Sometimes islands that have lakes are discarded,
-        // so lakes left floating in the sea must be discarded as well.
+        // Process the entities that are left
         for (Tile[] entity: entities) {
             if (entity[0].getType() == Type.LAKE) {
+                // If land around a lake was discarded,
+                // the lake is also converted into sea. 
                 if (!areaSurroundedByLand(entity)) {
                     for (Tile tile: entity) {
                         tile.setType(Type.SEA);
@@ -346,10 +428,88 @@ public class Generator {
                         tile.setType(Type.LAND_BORDER);
                     }
                 }
+                // Islands may generate forests
+                if (rng.nextDouble() < forestChance) {
+                    createForest(entity);
+                }
             }
         }
     }
 
+    /**
+     * Generates a FOREST within a LAND-entity
+     *  with a random coverage percentage.
+     *  Works in a similar way to landforming().
+     * @param Tile[] island
+     */
+    public void createForest(Tile[] island) {
+        // Determines how much of the island the forest initially covers
+        double coverage = ((double) rng.nextInt(13) / 20) + 0.1;
+        int forestTilesGoal = (int) (island.length * coverage);
+        if (forestTilesGoal < 1) {
+            coverage += 0.3;
+            forestTilesGoal = (int) (island.length * coverage);
+            // May happen if the chosen land area is too small; then abort
+            if (forestTilesGoal < 1) {
+                return;
+            }
+        }
+        int forestTiles = 0;
+        // Random starting position for the forest
+        Tile[] forest = new Tile[forestTilesGoal];
+        Tile current = island[rng.nextInt(island.length)];
+        forest[0] = current;
+        current.setType(Type.FOREST);
+        forestTiles++;
+        
+        int addInd = 1;
+        int ind = 1;
+        forestForming:
+        while (forestTiles < forestTilesGoal) {
+            Tile[] adjacentTiles
+                = adjacentTiles(current.getX(), current.getY());
+            int emptyAdjacentTileNum = 0;
+            for (int i = 0; i < 8; i++) {
+                if (adjacentTiles[i] != null) {
+                    if (adjacentTiles[i].getType() == Type.LAND) {
+                        emptyAdjacentTileNum++;
+                    }
+                }
+            }
+            if (emptyAdjacentTileNum > 0) {
+                Tile[] emptyAdjacentTiles = new Tile[emptyAdjacentTileNum];
+                emptyAdjacentTileNum = 0;
+                for (int i = 0; i < 8; i++) {
+                    if (adjacentTiles[i] != null) {
+                        if (adjacentTiles[i].getType() == Type.LAND) {
+                            emptyAdjacentTiles[emptyAdjacentTileNum++]
+                                = adjacentTiles[i];
+                        }
+                    }
+                }
+                current = emptyAdjacentTiles[
+                    rng.nextInt(emptyAdjacentTileNum)];
+                current.setType(Type.FOREST);
+                forest[addInd] = current;
+                forestTiles++;
+                addInd++;
+                ind = addInd;
+            } else {
+                ind--;
+                if (ind < 0) {
+                    break forestForming;
+                } else  {
+                    current = forest[ind];
+                }
+            }
+        }
+    }
+
+    /**
+     * "Discards" the entity by choosing an entity type adjacent to it
+     *  and turning all Tiles in the entity into that type.
+     * @param entity
+     */
     public void discardEntity(Tile[] entity) {
         Type newType = typeAdjacentToEntity(entity);
         for (Tile tile: entity) {
@@ -357,8 +517,12 @@ public class Generator {
         }
     }
 
-    // Returns the type of the area adjacent to given entity.
-    // Determines what type a discarded lake or island should be turned into.
+    /**
+     * Returns a type that is adjacent to some Tile of the entity.
+     *  If no differing types, returns the entity's own type.
+     * @param entity
+     * @return Type
+     */
     public Type typeAdjacentToEntity(Tile[] entity) {
         Type entityType = entity[0].getType();
         for (Tile tile: entity) {
@@ -373,20 +537,37 @@ public class Generator {
         return entityType;
     }
 
-    // Checks if the area of tiles touches the border at any point
+    /**
+     * Checks if the given area is connected to the border by checking
+     *  if any of the Tiles are in the borders.
+     *  If there are enough such Tiles, the area is considered connected.
+     *  The limit exists to create more realistic LAKE-areas;
+     *  if the area is connected to the border by only a few Tiles but is
+     *  otherwise surrounded by LAND, it looks better as a LAKE than as a SEA.
+     * @param area
+     * @return connected
+     */
     public boolean areaConnectedToBorder(Tile[] area) {
-        boolean connected = false;
+        int connected = 0;
+        int oceanRequirement = (int) ((m.getHeight() + m.getWidth()) / 2 * 0.1);
         for (Tile tile: area) {
             if (tile.getX() == 0 || tile.getX() == m.getWidth() - 1 
                 || tile.getY() == 0 || tile.getY() == m.getHeight() - 1) {
-                connected = true;
-                break;
+                connected++;
+                if (connected == oceanRequirement) {
+                    break;
+                }
             }
         }
-        return connected;
+        return connected >= oceanRequirement;
     }
 
-    // Checks if the area does not touch sea in any point.
+    /**
+     * Checks that the given LAKE-area is surrounded by LAND only.
+     *  Used to ensure that a LAKE is discarded when its surrounding LAND is.
+     * @param area
+     * @return landlocked
+     */
     public boolean areaSurroundedByLand(Tile[] area) {
         boolean notAdjacentToSea = true;
         areaChecking:
@@ -403,7 +584,13 @@ public class Generator {
         return notAdjacentToSea;
     }
 
-    // Builds a list of all the areas, which are lists of Tiles
+    /**
+     * Builds a list of all entities.
+     *  Iterates through the map: if the given coordinate hasn't been
+     *  processed, it means it has a new entity connected to it, and the entity
+     *  will be assembled.
+     * @return entities
+     */
     public Tile[][] entities() {
         Tile[][] entities = new Tile[(int) (m.getWidth() * m.getHeight())][];
         int ind = 0;
@@ -419,6 +606,7 @@ public class Generator {
                 }
             }
         }
+        // Assembles a list without null values in it
         Tile[][] final_entities = new Tile[ind][];
         for (int i = 0; i < ind; i++) {
             final_entities[i] = entities[i];
@@ -426,13 +614,25 @@ public class Generator {
         return final_entities;
     }
 
-    // A group of Tiles of same type that are linked together through adjacency
+    /**
+     * Assembles a Tile[] list of Tiles that are connected by being of the same
+     *  type.
+     * @param x x-coordinate where the entity begins
+     * @param y y-coordinate where the entity begins
+     * @param processed List of processed Tiles so far
+     * @return Tile[] entity
+     */
     public Tile[] entityAt(int x, int y, boolean[][] processed) {
         amt = 1;
+        // Used to check the Tiles in the Map that are included in this entity.
         boolean[][] included = new boolean[m.getWidth()][m.getHeight()];
+        // Used to flag to-be-processed Tiles so they do not get included
+        // more than once; saves processing time.
         boolean[][] flagged = new boolean[m.getWidth()][m.getHeight()];
         tq.push(m.getTile(x, y));
+        // Searches connected Tiles beginning from the first Tile.
         searchEntity(processed, included, flagged);
+        // Creates the list by checking each Tile from the included-array.
         Tile[] tiles = new Tile[amt];
         int ind = 0;
         for (int i = 0; i < m.getWidth(); i++) {
@@ -445,18 +645,25 @@ public class Generator {
         return tiles;
     }
 
-    // Adjacent tiles of the same type are pushed into a TileQueue
-    //  and during the processing, included-array is filled
+    /**
+     * Adjacent Tiles of the same type are pushed into a TileQueue.
+     *  The loop processes all of the Tiles in the queue until it is empty.
+     *  During the processing, included-array is filled.
+     *  Also fills the processed-array to prevent reprocessing.
+     * @param processed array of processed Tiles
+     * @param included array of Tiles included in this entity
+     * @param flagged array of Tiles that will be checked later
+     */
     public void searchEntity(
         boolean[][] processed, boolean[][] included, boolean[][] flagged) {
         while (true) {
             Tile tile = tq.pop();
             included[tile.getX()][tile.getY()] = true;
-            Tile[] adjacentTiles
+            Tile[] surrounding
                 = unprocessedSimilarAdjacent(tile.getX(), tile.getY(),
             processed, included, flagged);
-            if (adjacentTiles != null) {
-                for (Tile t: adjacentTiles) {
+            if (surrounding != null) {
+                for (Tile t: surrounding) {
                     if (!(processed[t.getX()][t.getY()]
                         || included[t.getX()][t.getY()])) {
                         tq.push(t);
@@ -470,6 +677,15 @@ public class Generator {
         }
     }
 
+    /**
+     * 
+     * @param x x-coordinate of the Tile in process
+     * @param y y-coordinate of the Tile in process
+     * @param processed array of processed Tiles
+     * @param included array of Tiles included in this entity
+     * @param flagged array of Tiles that will be checked later
+     * @return Tile[] adjacent Tiles that are of the same Type and unprocessed
+     */
     public Tile[] unprocessedSimilarAdjacent(int x, int y,
         boolean[][] processed, boolean[][] included, boolean[][] flagged) {
         Tile[] tiles = new Tile[8];
@@ -506,22 +722,14 @@ public class Generator {
             return final_tiles;
         }
     }
-    
 
-    // // To be used later
-    // private void sortTileArray(Tile[] arr) {
-    //     for (int i = 0; i < arr.length - 1; i++) {  
-    //         for (int j = i + 1; j < arr.length; j++) { 
-    //             Tile tmp;
-    //             if (arr[i].compareTo(arr[j]) == 1) {  
-    //                 tmp = arr[i];  
-    //                 arr[i] = arr[j];  
-    //                 arr[j] = tmp;  
-    //             }
-    //         }
-    //     }
-    // }
-
+    /**
+     * Creates a list of Tiles adjacent to the Tile in given coordinates.
+     *  If the adjacent Tile is out of bounds, it will be null.
+     * @param x x-coordinate of the Tile in process
+     * @param y y-coordinate of the Tile in process
+     * @return Tile[] adjacent Tiles
+     */
     public Tile[] adjacentTiles(int x, int y) {
         Tile[] tiles = new Tile[8];
         int ind = 0;

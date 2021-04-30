@@ -58,6 +58,8 @@ public class GUI extends Application {
                     pw.setColor(x, y, Color.LIGHTBLUE);
                 } else if (inspected.getType() == Type.LAKE_BORDER) {
                     pw.setColor(x, y, Color.SKYBLUE);
+                } else if (inspected.getType() == Type.FOREST) {
+                    pw.setColor(x, y, Color.FORESTGREEN);
                 } else {
                     pw.setColor(x, y, Color.RED);
                 }

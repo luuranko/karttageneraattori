@@ -10,5 +10,6 @@ public enum Type {
     LAND,
     LAND_BORDER,
     LAKE,
-    LAKE_BORDER;
+    LAKE_BORDER,
+    FOREST;
 }
