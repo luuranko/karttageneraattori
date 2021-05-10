@@ -17,7 +17,7 @@ public class GeneratorTest {
     private Generator g;
     
     @Before public void init() {
-        this.rng = new Random();
+        this.rng = new Random(1234567);
         this.g = new Generator(rng);
     }
 
@@ -227,25 +227,9 @@ public class GeneratorTest {
         assertTrue(!g.areaSurroundedByLand(area));
     }
 
-    // Currently broken
-    // @Test public void testAreaConnectedToBorder1() {
-    //     Tile[] area = {g.getMap().getMap()[0][1]};
-    //     assertTrue(g.areaConnectedToBorder(area));
-    // }
-
-    // @Test public void testAreaConnectedToBorder2() {
-    //     Tile[] area = {g.getMap().getMap()[1][0]};
-    //     assertTrue(g.areaConnectedToBorder(area));
-    // }
-
-    // @Test public void testAreaConnectedToBorder3() {
-    //     Tile[] area = {g.getMap().getMap()[g.getMap().getWidth() - 1][1]};
-    //     assertTrue(g.areaConnectedToBorder(area));
-    // }
-
-    // @Test public void testAreaConnectedToBorder4() {
-    //     Tile[] area = {g.getMap().getMap()[1][g.getMap().getHeight() - 1]};
-    //     assertTrue(g.areaConnectedToBorder(area));
+    // @Test public void printTest() {
+    //     var a = rng.nextDouble();
+    //     assertTrue(a == 0.24283348968807417);
     // }
 
 }

@@ -53,7 +53,7 @@ public class Generator {
      */
     public void newValues() {
         setIslandNum(rng.nextInt(3) + 1);
-        setLandToSeaRatio(((double) rng.nextInt(4) / 20.0) + 0.2);
+        setLandToSeaRatio(((double) rng.nextInt(8) / 20.0) + 0.2);
         setForestChance(((double) rng.nextInt(12) / 20) + 0.3); 
         setChanceToDiscardSmall(((double) rng.nextInt(12) / 20) + 0.2);
     }
@@ -444,7 +444,11 @@ public class Generator {
      */
     public void createForest(Tile[] island) {
         // Determines how much of the island the forest initially covers
-        double coverage = ((double) rng.nextInt(13) / 20) + 0.1;
+        double coverage = forestChance / 2;
+        coverage += ((double) rng.nextInt(10) / 20);
+        coverage = coverage > forestChance + 0.2 ?
+            forestChance + 0.2 : coverage;
+        coverage = coverage > 0.9 ? 0.9 : coverage;
         int forestTilesGoal = (int) (island.length * coverage);
         if (forestTilesGoal < 1) {
             coverage += 0.3;
