@@ -6,6 +6,7 @@ plugins {
     id 'jacoco'
     id 'checkstyle'
     id 'org.openjfx.javafxplugin' version '0.0.9'
+    id "com.github.johnrengelman.shadow" version "6.1.0"
 }
 
 javafx {
@@ -17,6 +18,15 @@ java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
 }
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'karttageneraattori.UI.App'
+    }
+}
+
+mainClassName = 'karttageneraattori.UI.App'
+
 
 repositories {
     // Use JCenter for resolving dependencies.

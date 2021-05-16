@@ -52,14 +52,23 @@ public class Generator {
      *  islandNum, landToSeaRatio, forestChance and chanceToDiscardSmall.
      */
     public void newValues() {
-        setIslandNum(rng.nextInt(3) + 1);
+        setRandomIslandNum();
         setLandToSeaRatio(((double) rng.nextInt(8) / 20.0) + 0.2);
         setForestChance(((double) rng.nextInt(12) / 20) + 0.3); 
         setChanceToDiscardSmall(((double) rng.nextInt(12) / 20) + 0.2);
     }
 
-    public void setIslandNum(int islandNum) {
-        this.islandNum = islandNum;
+    public boolean setIslandNum(int islandNum) {
+        if (islandNum < 7) {
+            this.islandNum = islandNum;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public void setRandomIslandNum() {
+        setIslandNum(rng.nextInt(6) + 1);
     }
 
     public void setLandToSeaRatio(double landToSeaRatio) {
@@ -89,47 +98,14 @@ public class Generator {
      *  to tidy up the generated forests.
      */
     public void initMap() {
-        long start = System.currentTimeMillis();
-        long alg = start;
-        double time;
-
         landforming();
-        time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        System.out.println("Islands formed in " + time);
-        alg = System.currentTimeMillis();
-
         removeSingles(5);
-        time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        System.out.println("Removed lonely tiles (5) in " + time);
-        alg = System.currentTimeMillis();
-
         removeSingles(2);
-        time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        System.out.println("Removed lonely tiles (2) in " + time);
-        alg = System.currentTimeMillis();
-
         fillInSea();
-        time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        System.out.println("Filled in sea in " + time);
-        alg = System.currentTimeMillis();
-
         processEntities();
-        time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        System.out.println("Filled in lakes, "
-            + "removed some small areas, "
-            + "created forests, and filled in borders in " + time);
-        alg = System.currentTimeMillis();
-
-        removeSingles(3);
-        time = (double) (System.currentTimeMillis() - alg) * 0.001;
-        System.out.println("Removed lonely tiles (2) in " + time);
-        alg = System.currentTimeMillis();
-
-        time = (double) (System.currentTimeMillis() - start) * 0.001;
-        System.out.println("Generating the map took "
-            + time + " seconds altogether");
+        cleanUpForest();
+        removeSingles(1);
     }
-
 
     /**
      * Turns any EMPTY Tiles into SEA.
@@ -154,11 +130,12 @@ public class Generator {
      */
     public Tile[][] islandsStartPos(int landTilesGoal) {
         Tile[][] islands = new Tile[islandNum][landTilesGoal + 1];
-
-        int minDistance_x = (int) (m.getWidth() * 0.2); 
-        int minDistance_y = (int) (m.getHeight() * 0.2);
-        minDistance_x = minDistance_x > 1 ? minDistance_x : 2;
-        minDistance_y = minDistance_y > 1 ? minDistance_y : 2;
+        double minDistanceMod = 0.2;
+        if (islandNum > 3) {
+            minDistanceMod -= (islandNum - 3) * 0.05;
+        }
+        int minDistance_x = (int) (m.getWidth() * minDistanceMod); 
+        int minDistance_y = (int) (m.getHeight() * minDistanceMod);
 
         int okIslands = 0;
         while (true) {
@@ -210,10 +187,11 @@ public class Generator {
                 if (mustResetIsland == false) {
                     okIslands++;
                 }
-
                 islands[i][0] = m.getTile(x, y);
-                m.getMap()[x][y].setType(Type.LAND);
             }
+        }
+        for (Tile[] i: islands) {
+            i[0].setType(Type.LAND);
         }
         return islands;
     }
@@ -225,8 +203,9 @@ public class Generator {
      *  Tiles of the current Tile. If no EMPTY Tiles surround it, the next
      *  Tile that will be checked for them will be picked from the previously
      *  added Tiles. 
+     * @return int landTiles: amount of Tiles that were turned into Type LAND
      */
-    public void landforming() {
+    public int landforming() {
         int totalTiles = (m.getWidth()) * (m.getHeight());
         int landTiles = 0;
         int landTilesGoal = (int) (totalTiles * landToSeaRatio);
@@ -288,7 +267,7 @@ public class Generator {
                 
             }
         }
-
+        return landTiles;
     }
 
     
@@ -324,7 +303,7 @@ public class Generator {
                     if (similarTiles < limit && limit >= 4) {
                         if (similarTiles < limit - 1) {
                             changeTile = true;
-                        } else if (similarTiles == limit - 1) {
+                        } else {
                             if (rng.nextDouble() < 0.5) {
                                 changeTile = true;
                             }
@@ -352,6 +331,60 @@ public class Generator {
     }
 
     /**
+     * A version of removeSingles that focuses only on cleaning up
+     *  the newly generated forests. If FOREST Tile's surrounding rate of 
+     *  FOREST / (LAND + FOREST) is less than the changeRate,
+     *  then the FOREST will be turned into LAND, 
+     *  and vice versa for LAND Tiles.
+     */
+    public void cleanUpForest() {
+        double changeRate = 0.35;
+        for (int x = 0; x < m.getWidth(); x++) {
+            for (int y = 0; y < m.getHeight(); y++) {
+                if (m.getTile(x, y).getType() == Type.FOREST) {
+                    Tile[] surroundingTiles = adjacentTiles(x, y);
+                    int forestTiles = 0;
+                    int landTiles = 0;
+                    for (Tile t: surroundingTiles) {
+                        if (t != null) {
+                            if (t.getType() == Type.FOREST) {
+                                forestTiles++;
+                            } else if (t.getType() == Type.LAND) {
+                                landTiles++;
+                            }
+                        }
+                    }
+                    int total = forestTiles + landTiles;
+                    double forestPercentage =
+                        (double) (forestTiles / (double) total * 1.0);
+                    if (forestPercentage < changeRate) {
+                        m.getTile(x, y).setType(Type.LAND);
+                    }
+                } else if (m.getTile(x, y).getType() == Type.LAND) {
+                    Tile[] surroundingTiles = adjacentTiles(x, y);
+                    int forestTiles = 0;
+                    int landTiles = 0;
+                    for (Tile t: surroundingTiles) {
+                        if (t != null) {
+                            if (t.getType() == Type.FOREST) {
+                                forestTiles++;
+                            } else if (t.getType() == Type.LAND) {
+                                landTiles++;
+                            }
+                        }
+                    }
+                    int total = forestTiles + landTiles;
+                    double landPercentage =
+                        (double) (landTiles / (double) total * 1.0);
+                    if (landPercentage < changeRate) {
+                        m.getTile(x, y).setType(Type.FOREST);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Makes a list of entities and processes them:
      *  turning inland SEA-areas into LAKE,
      *  discarding some areas that are very small,
@@ -361,12 +394,15 @@ public class Generator {
     public void processEntities() {
         double chanceToDiscardTiny = chanceToDiscardSmall + 0.3 < 0.95
             ? chanceToDiscardSmall + 0.3 : 0.95;
+        int tiny_size = (int) (m.getWidth() * m.getHeight() * 0.001);
+        int small_size = (int) (m.getWidth() * m.getHeight() * 0.004);
 
-        int tiny_size = (int) (m.getWidth() * m.getHeight() * 0.0075);
-        int small_size = (int) (m.getWidth() * m.getHeight() * 0.015);
-        
+        // Most time-consuming part:
+        // gathers a list of all entities to process them
         Tile[][] entities = entities();
+
         for (Tile[] entity: entities) {
+            // Inland SEA-areas are turned into LAKE
             if (entity[0].getType() == Type.SEA) {
                 if (!areaConnectedToBorder(entity)) {
                     for (Tile tile: entity) {
@@ -386,7 +422,11 @@ public class Generator {
             }
         }
 
-        // Process the entities that are left
+        // Process entities: draw borders, create forest
+        double forestSpawnChance = forestChance;
+        int forestSize_small = (int) (m.getWidth() * m.getHeight() * 0.001);
+        int forestSize_med = (int) (m.getWidth() * m.getHeight() * 0.005);
+        int forestSize_big = (int) (m.getWidth() * m.getHeight() * 0.01);
         for (Tile[] entity: entities) {
             if (entity[0].getType() == Type.LAKE) {
                 // If land around a lake was discarded,
@@ -397,65 +437,121 @@ public class Generator {
                     }
                 } else {
                     // Borders given for lakes
-                    for (Tile tile: entity) {
-                        int lakeTiles = 0;
-                        int nulls = 0;
-                        for (Tile t: adjacentTiles(tile.getX(), tile.getY())) {
-                            if (t == null) {
-                                nulls++;
-                            } else if (t.getType() == Type.LAKE
-                                || t.getType() == Type.LAKE_BORDER) {
-                                lakeTiles++;
-                            }
-                        }
-                        if (lakeTiles < 8 - nulls) {
-                            tile.setType(Type.LAKE_BORDER);
-                        }
-                    }
+                    drawBorders(entity);
                 }
             } else if (entity[0].getType() == Type.LAND) {
                 // Borders given for islands
-                for (Tile tile: entity) {
-                    int seaTiles = 0;
-                    for (Tile t: adjacentTiles(tile.getX(), tile.getY())) {
-                        if (t == null) {
-                            continue;
-                        } else if (t.getType() == Type.SEA) {
-                            seaTiles++;
-                        }
-                    }
-                    if (seaTiles >= 2) {
-                        tile.setType(Type.LAND_BORDER);
-                    }
-                }
+                drawBorders(entity);
                 // Islands may generate forests
-                if (rng.nextDouble() < forestChance) {
-                    createForest(entity);
+                // If generated forest is small and the overall chance
+                // for forests is high (many large forests are desired),
+                // then the chance for generating them is increased
+                // until an appropriately large forest is generated
+                int createdForest = 0;
+                if (rng.nextDouble() < forestSpawnChance) {
+                    createdForest = createForest(entity);
+                }
+                if (createdForest < forestSize_small) {
+                    if (forestChance > 0.45) {
+                        forestSpawnChance += 0.15;
+                    } else {
+                        forestSpawnChance = forestChance;
+                    }
+                } else if (createdForest < forestSize_med) {
+                    if (forestChance > 0.45) {
+                        forestSpawnChance += 0.1;
+                    } else {
+                        forestSpawnChance = forestChance; 
+                    }
+                } else if (createdForest < forestSize_big) {
+                    if (forestChance > 0.55) {
+                        forestSpawnChance += 0.05;
+                    } else {
+                        forestSpawnChance -= 0.05;
+                    }
+                } else {
+                    if (forestChance > 0.45) {
+                        forestSpawnChance = forestChance;
+                    } else {
+                        forestSpawnChance -= 0.1;
+                    }
                 }
             }
         }
+    }
+
+
+
+    /**
+     * Draws borders on areas of Type LAKE or LAND.
+     * @return int borderTiles: amount of Tiles turned into border-type
+     */
+    public int drawBorders(Tile[] area) {
+        int borderTiles = 0;
+        if (area[0].getType() == Type.LAKE) {
+            for (Tile tile: area) {
+                boolean changeIntoBorder = false;
+                for (Tile t: directlyAdjacentTiles(tile.getX(), tile.getY())) {
+                    if (t == null) {
+                        continue;
+                    } else if (t.getType() != Type.LAKE
+                        && t.getType() != Type.LAKE_BORDER) {
+                        changeIntoBorder = true;
+                        break;
+                    }
+                }
+                if (changeIntoBorder) {
+                    tile.setType(Type.LAKE_BORDER);
+                    borderTiles++;
+                }
+            }
+        } else if (area[0].getType() == Type.LAND) {
+            // Draws the border only next to the shore, not elsewhere,
+            // so checks only for SEA-Tiles
+            for (Tile tile: area) {
+                boolean changeIntoBorder = false;
+                for (Tile t: directlyAdjacentTiles(tile.getX(), tile.getY())) {
+                    if (t == null) {
+                        continue;
+                    } else if (t.getType() == Type.SEA) {
+                        changeIntoBorder = true;
+                        break;
+                    }
+                }
+                if (changeIntoBorder) {
+                    tile.setType(Type.LAND_BORDER);
+                    borderTiles++;
+                }
+            }
+        } else {
+            // Does not draw borders on areas of other types
+            return 0;
+        }
+        return borderTiles;
     }
 
     /**
      * Generates a FOREST within a LAND-entity
      *  with a random coverage percentage.
      *  Works in a similar way to landforming().
-     * @param Tile[] island
+     * @param Tile[] island, a LAND-type area
+     * @return int forestTiles, amount of Tiles turned into FOREST
      */
-    public void createForest(Tile[] island) {
+    public int createForest(Tile[] island) {
         // Determines how much of the island the forest initially covers
         double coverage = forestChance / 2;
         coverage += ((double) rng.nextInt(10) / 20);
         coverage = coverage > forestChance + 0.2 ?
             forestChance + 0.2 : coverage;
-        coverage = coverage > 0.9 ? 0.9 : coverage;
+        coverage = coverage > 0.85 ? 0.85 : coverage;
         int forestTilesGoal = (int) (island.length * coverage);
-        if (forestTilesGoal < 1) {
+        int minimumForest = (int) (m.getHeight() * m.getWidth() * 0.0005);
+        if (forestTilesGoal < minimumForest) {
             coverage += 0.3;
             forestTilesGoal = (int) (island.length * coverage);
             // May happen if the chosen land area is too small; then abort
-            if (forestTilesGoal < 1) {
-                return;
+            if (forestTilesGoal < minimumForest) {
+                return 0;
             }
         }
         int forestTiles = 0;
@@ -507,6 +603,7 @@ public class Generator {
                 }
             }
         }
+        return forestTiles;
     }
 
     /**
@@ -668,10 +765,7 @@ public class Generator {
             processed, included, flagged);
             if (surrounding != null) {
                 for (Tile t: surrounding) {
-                    if (!(processed[t.getX()][t.getY()]
-                        || included[t.getX()][t.getY()])) {
-                        tq.push(t);
-                    }
+                    tq.push(t);
                 }
             }
             processed[tile.getX()][tile.getY()] = true;
@@ -703,8 +797,6 @@ public class Generator {
                     continue;
                 } else if (processed[x + i][y + j]) {
                     continue;
-                } else if (included[x + i][y + j]) {
-                    continue;
                 } else if (flagged[x + i][y + j]) {
                     continue;
                 }  else if (m.getTile(x + i, y + j).getType()
@@ -728,8 +820,9 @@ public class Generator {
     }
 
     /**
-     * Creates a list of Tiles adjacent to the Tile in given coordinates.
-     *  If the adjacent Tile is out of bounds, it will be null.
+     * Creates a list of Tiles adjacent (also diagonally) to the Tile
+     *  in the given coordinates.
+     *  If an adjacent Tile is out of bounds, that Tile will be null.
      * @param x x-coordinate of the Tile in process
      * @param y y-coordinate of the Tile in process
      * @return Tile[] adjacent Tiles
@@ -753,11 +846,52 @@ public class Generator {
         return tiles;
     }
 
+    /**
+     * Creates a list of Tiles that are directly adjacent to the Tile
+     *  in the given coordinates (not diagonally adjacent).
+     *  If an adjacent Tile is out of bounds, that Tile will be null.
+     * @param x x-coordinate
+     * @param y y-coordinate
+     * @return Tile[] directly adjacent tiles
+     */
+    public Tile[] directlyAdjacentTiles(int x, int y) {
+        Tile[] tiles = new Tile[4];
+        if (x - 1 < 0) {
+            tiles[0] = null;
+        } else {
+            tiles[0] = m.getTile(x - 1, y);
+        }
+        if (y - 1 < 0) {
+            tiles[1] = null;
+        } else {
+            tiles[1] = m.getTile(x, y - 1);
+        }
+        if (x + 1 > m.getWidth() - 1) {
+            tiles[2] = null;
+        } else {
+            tiles[2] = m.getTile(x + 1, y);
+        }
+        if (y + 1 > m.getHeight() - 1) {
+            tiles[3] = null;
+        } else {
+            tiles[3] = m.getTile(x, y + 1);
+        }
+        return tiles;
+    }
+
     public int getIslandNum() {
         return islandNum;
     }
 
     public double getLandToSeaRatio() {
         return landToSeaRatio;
+    }
+
+    public double getForestChance() {
+        return forestChance;
+    }
+
+    public double getChanceToDiscardSmall() {
+        return chanceToDiscardSmall;
     }
 }
