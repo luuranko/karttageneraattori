@@ -1,6 +1,8 @@
 ### Määrittelydokumentti
 
-Ohjelma tulee olemaan visuaalisia, kaksiulotteisia karttoja generoiva sovellus. Alustavana tavoitteena on, että ohjelma ei saa syötettä, vaan generoi kuvan, jossa on jotakuinkin realistisen näköisiä maa-alueita ja vesistöjä. Jos aikaa jää, niin ohjelma generoi myös metsiä, vuoria, ja mahdollisesti muitakin yksityiskohtia kartalle, ja generoitavan kartan piirteet voisivat olla osittain käyttäjän hallittavissa: käyttäjän syötteen mukaan kartasta juuri tietty prosenttiosuus olisi esim. vesistöjä.
+Ohjelman algoritmi on alkuperäinen. Ohjelman tarkoitus on luoda satunnaisgeneroituja karttoja, jotka ovat silmämääräisesti tarpeeksi realistisia esimerkiksi fiktiivisen maailman kartoiksi.
+
+Ohjelma saa käyttöliittymästä syötteen kartan kokoon ja muutamiin asetuksiin, jotka vaikuttavat kartan yksityiskohtiin, kuten vesistöjen osuuteen suhteessa maahan. Kartta on näiden asetusten rajoissa satunnainen. 
 
 Ohjelma toteutetaan Javalla. Projektin kieli on englanti, mutta dokumentaatio (javadocseja lukuunottamatta) on suomeksi.
 

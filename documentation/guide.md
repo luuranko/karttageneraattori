@@ -2,7 +2,9 @@
 
 ### Käynnistys
 
-Juurihakemistossa komento `gradle shadowJar` ja sen jälkeen `java -jar app/build/libs/app-all.jar`
+Jar-tiedostosta: `java -jar app-all.jar`
+
+Kloonattuna: juurihakemistossa komento `gradle run`, tai `gradle shadowJar` ja sen jälkeen `java -jar app/build/libs/app-all.jar`.
 
 ### Ohjelman käyttö
 
