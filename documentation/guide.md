@@ -2,7 +2,7 @@
 
 ### Käynnistys
 
-Jar-tiedostosta: `java -jar app-all.jar`
+Releasen jar-tiedostosta: komentorivillä komento `java -jar karttageneraattori.jar`
 
 Kloonattuna: juurihakemistossa komento `gradle run`, tai `gradle shadowJar` ja sen jälkeen `java -jar app/build/libs/app-all.jar`.
 
